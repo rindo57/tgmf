@@ -29,7 +29,7 @@ For AppleMusic album info:
 
 Made by @pseudoboi🧪"""
 
-owner = int(os.getenv('owner'))  # Ensure this is stored as an integer in your environment
+#owner = int(os.getenv('owner'))  # Ensure this is stored as an integer in your environment
 
 app = Client('botsession', 
              api_id=10247139,
