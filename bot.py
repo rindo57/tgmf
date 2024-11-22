@@ -43,9 +43,9 @@ Made by @pseudoboi🧪"""
 
 owner = str(os.getenv('owner'))
 
-app = Client('botsession', api_id=os.getenv('api_id'),
-             api_hash=os.getenv('api_hash'),
-             bot_token=os.getenv('bot_token'))
+app = Client('botsession', api_id=10247139,
+             api_hash="96b46175824223a33737657ab943fd6a",
+             bot_token="6769415354:AAHh7IfKn11PWuNxUo0qmoIuW7NclxaaFHQ")
 
 print("MediaInfo bot started!", flush=True)
 
