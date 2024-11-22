@@ -6,7 +6,7 @@ from pyrogram.types import Message
 from services.sox import generateSpek
 from services.tgFile import tgInfo
 
-load_dotenv()
+#load_dotenv()
 
 helpMessage = """MediaInfo supports the following services:
 `• G-DRIVE
@@ -43,9 +43,7 @@ print("MediaInfo bot started!", flush=True)
 async def hello(client: Client, message: Message):
     try:
         # Unauthorized check
-        if message.from_user.id == owner:
-            await message.reply("Unauthorized!!!")
-            return
+     
 
         # Handle commands
         if '/start' in message.text:
