@@ -5,12 +5,6 @@ from dotenv import load_dotenv
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-from services.appDrive import appdriveInfo
-from services.appleMusic import amInfo
-from services.ddl import ddlinfo
-from services.gDrive import gdriveInfo
-from services.gdtot import gdtotInfo
-from services.mega import megaInfo
 from services.sox import generateSpek
 from services.tgFile import tgInfo
 
@@ -71,21 +65,8 @@ def hello(client: Client, message: Message):
             return
 
         elif "/info" in message.text:
-            if 'mega.nz' in message.text.lower():
-                message.reply("Processing your MEGA.nz request...")
-                megaInfo(message, app)
-            elif 'drive.google' in message.text.lower():
-                message.reply("Processing your G-DRIVE request...")
-                gdriveInfo(message, app)
-            elif 'appdrive' in message.text.lower():
-                message.reply("Processing your AppDrive request...")
-                appdriveInfo(message, app)
-            elif 'gdtot' in message.text.lower():
-                message.reply("Processing your GDTOT request...")
-                gdtotInfo(message, app)
-            elif 'music.apple' in message.text.lower():
-                amInfo(message)
-            elif message.reply_to_message:
+           
+            if message.reply_to_message:
                 message.reply("Processing your Telegram file request...")
                 tgInfo(client, message)
             elif len(message.text) > 10:
