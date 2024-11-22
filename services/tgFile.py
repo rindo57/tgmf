@@ -2,16 +2,19 @@ import json
 import os
 import re
 import subprocess
-
 from pyrogram import Client
 from pyrogram.types import Message
-
 from services.humanFunctions import humanBitrate, humanSize, remove_N
 
-def tgInfo(client: Client, msg: Message):
-    print("processing TG", flush=True)
+
+async def tgInfo(client: Client, msg: Message):
+    print("Processing Telegram file...", flush=True)
     message = msg.reply_to_message
-    # print(message)
+
+    if not message or not message.media:
+        raise Exception("`This message does not contain any supported media.`")
+
+    # Determine media type
     mediaType = message.media.value
     if mediaType == 'video':
         media = message.video
@@ -23,64 +26,73 @@ def tgInfo(client: Client, msg: Message):
         print("This media type is not supported", flush=True)
         raise Exception("`This media type is not supported`")
 
+    # Extract file details
     mime = media.mime_type
     fileName = media.file_name
     size = media.file_size
 
     print(fileName, size, flush=True)
 
-    if mediaType == 'document':
-        if 'video' not in mime and 'audio' not in mime and 'image' not in mime:
-            print("Makes no sense", flush=True)
-            raise Exception("`This file makes no sense to me.`")
+    # Validate document type
+    if mediaType == 'document' and all(x not in mime for x in ['video', 'audio', 'image']):
+        print("Makes no sense", flush=True)
+        raise Exception("`This file makes no sense to me.`")
 
-    if int(size) <= 50000000:
-        message.download(os.path.join(os.getcwd(), fileName))
-
+    # Download or stream the file
+    if int(size) <= 50_000_000:  # 50 MB limit
+        await message.download(file_name=fileName)
     else:
-        for chunk in client.stream_media(message, limit=5):
-            # save these chunks to a file
+        async for chunk in client.stream_media(message, limit=5):
             with open(fileName, 'ab') as f:
                 f.write(chunk)
 
-    mediainfo = subprocess.check_output(
-        ['mediainfo', fileName]).decode("utf-8")
-
-    mediainfo_json = json.loads(subprocess.check_output(
-        ['mediainfo', fileName, '--Output=JSON']).decode("utf-8"))
-
-    # write a function to convert bytes to readable format
-    readable_size = humanSize(size)
-
     try:
+        # Run mediainfo commands
+        mediainfo = subprocess.check_output(['mediainfo', fileName]).decode("utf-8")
+        mediainfo_json = json.loads(
+            subprocess.check_output(['mediainfo', fileName, '--Output=JSON']).decode("utf-8")
+        )
+
+        # Human-readable size
+        readable_size = humanSize(size)
+
+        # Update mediainfo details
         lines = mediainfo.splitlines()
         if 'image' not in mime:
             duration = float(mediainfo_json['media']['track'][0]['Duration'])
-            bitrate_kbps = (size*8)/(duration*1000)
+            bitrate_kbps = (size * 8) / (duration * 1000)
             bitrate = humanBitrate(bitrate_kbps)
+
             for i in range(len(lines)):
                 if 'File size' in lines[i]:
-                    lines[i] = re.sub(r": .+", ': '+readable_size, lines[i])
+                    lines[i] = re.sub(r": .+", f': {readable_size}', lines[i])
                 elif 'Overall bit rate' in lines[i] and 'Overall bit rate mode' not in lines[i]:
-                    lines[i] = re.sub(r": .+", ': '+bitrate, lines[i])
+                    lines[i] = re.sub(r": .+", f': {bitrate}', lines[i])
                 elif 'IsTruncated' in lines[i] or 'FileExtension_Invalid' in lines[i]:
                     lines[i] = ''
 
             remove_N(lines)
 
-        with open(f'{fileName}.txt', 'w') as f:
+        # Save updated mediainfo to a file
+        txt_file = f'{fileName}.txt'
+        with open(txt_file, 'w') as f:
             f.write('\n'.join(lines))
 
-        msg.reply_document(document=f'{fileName}.txt', caption=f'`{fileName}`')
+        # Send the file back as a document
+        await msg.reply_document(document=txt_file, caption=f'`{fileName}`')
 
-        print("TG file Mediainfo sent", flush=True)
-        os.remove(f'{fileName}.txt')
-    except:
-        message.reply_text(
-            "Something bad occurred particularly with this file.")
-        print("Something bad occurred for tg file", flush=True)
+        print("Telegram file Mediainfo sent", flush=True)
+
+    except Exception as e:
+        await message.reply_text("Something bad occurred particularly with this file.")
+        print(f"Error processing file: {e}", flush=True)
+
     finally:
-        os.remove(fileName)
+        # Cleanup
+        if os.path.exists(fileName):
+            os.remove(fileName)
+        if os.path.exists(txt_file):
+            os.remove(txt_file)
 
 
-print("TG file module loaded", flush=True)
+print("Telegram file module loaded", flush=True)
