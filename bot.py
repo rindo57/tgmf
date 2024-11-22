@@ -1,6 +1,4 @@
 import os
-import sys
-
 from dotenv import load_dotenv
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -10,10 +8,7 @@ from services.tgFile import tgInfo
 
 load_dotenv()
 
-#sys.path.append(os.path.join(os.getcwd(), 'services'))
-
-
-helpMessage = """MediaInfo support the following services:
+helpMessage = """MediaInfo supports the following services:
 `• G-DRIVE
 • MEGA.nz
 • AppDrive
@@ -34,10 +29,10 @@ For AppleMusic album info:
 
 Made by @pseudoboi🧪"""
 
+owner = int(os.getenv('owner'))  # Ensure this is stored as an integer in your environment
 
-owner = str(os.getenv('owner'))
-
-app = Client('botsession', api_id=10247139,
+app = Client('botsession', 
+             api_id=10247139,
              api_hash="96b46175824223a33737657ab943fd6a",
              bot_token="6769415354:AAHh7IfKn11PWuNxUo0qmoIuW7NclxaaFHQ")
 
@@ -45,37 +40,39 @@ print("MediaInfo bot started!", flush=True)
 
 
 @app.on_message(filters.text & filters.private)
-def hello(client: Client, message: Message):
-    if message.from_user.id == owner:
-        message.reply("Unauthorized!!!")
-        return
-
-    if '/start' in message.text:
-        message.reply("Send /help for more info.")
-        return
-
-    if '/help' in message.text:
-        message.reply(helpMessage)
-        return
-
+async def hello(client: Client, message: Message):
     try:
-        if "/spek" in message.text:
-            message.reply("Processing your spectrogram request...")
-            generateSpek(message)
+        # Unauthorized check
+        if message.from_user.id == owner:
+            await message.reply("Unauthorized!!!")
             return
 
-        elif "/info" in message.text:
-           
+        # Handle commands
+        if '/start' in message.text:
+            await message.reply("Send /help for more info.")
+            return
+
+        if '/help' in message.text:
+            await message.reply(helpMessage)
+            return
+
+        # Process spectrogram request
+        if "/spek" in message.text:
+            await message.reply("Processing your spectrogram request...")
+            await generateSpek(message)  # Ensure generateSpek is an async function
+            return
+
+        # Process media info
+        if "/info" in message.text:
             if message.reply_to_message:
-                message.reply("Processing your Telegram file request...")
-                tgInfo(client, message)
+                await message.reply("Processing your Telegram file request...")
+                await tgInfo(client, message)  # Ensure tgInfo is an async function
             elif len(message.text) > 10:
-                message.reply("Processing your DDL request...")
-                ddlinfo(message)
+                await message.reply("Processing your DDL request...")
+                await ddlinfo(message)  # Ensure ddlinfo is an async function
     except Exception as e:
-        message.reply(f"`An error occured!`\n{e}")
+        await message.reply(f"`An error occurred!`\n{e}")
         print(e, flush=True)
-        return
 
 
 app.run()
